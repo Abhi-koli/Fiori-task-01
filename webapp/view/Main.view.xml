@@ -1,0 +1,49 @@
+<mvc:View controllerName="fioritask01.controller.Main"
+    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"
+    xmlns="sap.m" xmlns:core="sap.ui.core">
+    <Page id="page" title="{i18n>title}">
+        <content>
+            <ComboBox id="columnSelect" change="onPress" items="{
+                path: '/items'
+                
+            }">
+                <core:Item key="{key}" text="{text}" />
+            </ComboBox>
+            <!-- <Button text="Hide" press="onPress" /> -->
+            <Button text="Reset" press="resetbutton" />
+
+            <Table id="table" items="{/Products}">
+                <columns>
+                    <Column id="1" ><Text text="Product ID" /></Column>
+                    <Column id="2"><Text text="Product Name" /></Column>
+                    <Column id="3"><Text text="Quantity Per Unit" /></Column>
+                    <Column id="4"><Text text="SupplierID" /></Column>
+                    <Column id="5" ><Text text="CategoryID" /></Column>
+                    <Column id="6"><Text text="UnitPrice" /></Column>
+                    <Column id="7"><Text text="UnitsInStock" /></Column>
+                    <Column id="8"><Text text="UnitsOnOrder" /></Column>
+                    <Column id="9" ><Text text="ReorderLevel" /></Column>
+                    <Column id="10"><Text text="Discontinued" /></Column>
+                </columns>
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Text text="{ProductID}"> </Text>
+                            <Text text="{ProductName}" />
+                            <Text text="{QuantityPerUnit}" />
+                            <Text text="{SupplierID}" />
+                            <Text text="{CategoryID}"> </Text>
+                            <Text text="{UnitPrice}" />
+                            <Text text="{UnitsInStock}" />
+                            <Text text="{UnitsOnOrder}" />
+                            <Text text="{ReorderLevel}"> </Text>
+                            <Text text="{Discontinued}" />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+
+
+        </content>
+    </Page>
+</mvc:View>
