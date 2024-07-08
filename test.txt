@@ -1,0 +1,53 @@
+[15:51] Abhishek Rajesh Koli
+<Page title="Vendor Withholding Tax">
+      <content>
+        <VerticalLayout>
+          <HBox>
+            <Text text="Standard" />
+            <Spacer />
+            <Text text="Go to:"></Text>
+            <Button text="Adapt Filters" />
+          </HBox>
+          <HBox>
+            <Text text="Period:" />
+            <Input />
+            <Text text="Fiscal Year:" />
+            <Input />
+            <Text text="Company Code:" />
+            <Input />
+          </HBox>
+          <HBox>
+            <Text text="Tax Code:" />
+            <Input />
+            <Text text="Vendor:" />
+            <Input />
+          </HBox>
+          <Text text="LTD" />
+          <Table>
+            <columns>
+              <Column width="100px">
+                <Text text="Company Code" />
+              </Column>
+              <Column width="100px">
+                <Text text="Period" />
+              </Column>
+              </columns>
+            <items>
+              <ColumnListItem>
+                <cells>
+                  <Text text="Π" />
+                  <Text text="Σ 0.00" />
+                  </cells>
+              </ColumnListItem>
+              </items>
+          </Table>
+          <HBox>
+            <Text text="No data" />
+            <Spacer />
+            <Button text="Save" />
+            <Button text="Export" />
+          </HBox>
+        </VerticalLayout>
+      </content>
+    </Page>
+ 
