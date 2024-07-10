@@ -1,8 +1,11 @@
 <content>
-                    <Label text="Search Options" class="sapUiSmallMargin"/>
-                    <Input id="searchOption1" placeholder="Search Option 1"/>
-                    <Input id="searchOption2" placeholder="Search Option 2"/>
-                    <Input id="searchOption3" placeholder="Search Option 3"/>
-                    <Input id="searchOption4" placeholder="Search Option 4"/>
-                    <Button id="searchButton" text="Search" press="onSearchPress"/>
+                     <HBox justifyContent="SpaceAround" alignItems="Center" class="sapUiSmallMargin">
+                        <items>
+                            <Input id="searchOption1" placeholder="Search Option 1"/>
+                            <Input id="searchOption2" placeholder="Search Option 2"/>
+                            <Input id="searchOption3" placeholder="Search Option 3"/>
+                            <Input id="searchOption4" placeholder="Search Option 4"/>
+                            <Button id="searchButton" text="Search" press="onSearchPress"/>
+                        </items>
+                    </HBox>
                 </content>
