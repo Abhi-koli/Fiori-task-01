@@ -1,11 +1,8 @@
-<mvc:View controllerName="myApp.controller.View1" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m">
-    <VBox>
-        <SearchField id="searchField1" search="onSearch" placeholder="Search 1..." />
-        <SearchField id="searchField2" search="onSearch" placeholder="Search 2..." />
-        <SearchField id="searchField3" search="onSearch" placeholder="Search 3..." />
-        <SearchField id="searchField4" search="onSearch" placeholder="Search 4..." />
-        <Table items="{/results}">
-            <!-- Define your columns here -->
-        </Table>
-    </VBox>
-</mvc:View>
+<content>
+                    <Label text="Search Options" class="sapUiSmallMargin"/>
+                    <Input id="searchOption1" placeholder="Search Option 1"/>
+                    <Input id="searchOption2" placeholder="Search Option 2"/>
+                    <Input id="searchOption3" placeholder="Search Option 3"/>
+                    <Input id="searchOption4" placeholder="Search Option 4"/>
+                    <Button id="searchButton" text="Search" press="onSearchPress"/>
+                </content>
