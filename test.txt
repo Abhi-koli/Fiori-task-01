@@ -1,10 +1,30 @@
 <content>
                      <HBox justifyContent="SpaceAround" alignItems="Center" class="sapUiSmallMargin">
                         <items>
-                            <Input id="searchOption1" placeholder="Search Option 1"/>
-                            <Input id="searchOption2" placeholder="Search Option 2"/>
-                            <Input id="searchOption3" placeholder="Search Option 3"/>
-                            <Input id="searchOption4" placeholder="Search Option 4"/>
+                            <Label text="Name"/>
+                            <ComboBox id="searchOption1" placeholder="Search Option 1">
+                                <items>
+                                    <!-- Add your items here -->
+                                </items>
+                            </ComboBox>
+                            <Label text="Name"/>
+                            <ComboBox id="searchOption2" placeholder="Search Option 2">
+                                <items>
+                                    <!-- Add your items here -->
+                                </items>
+                            </ComboBox>
+                            <Label text="Name"/>
+                            <ComboBox id="searchOption3" placeholder="Search Option 3">
+                                <items>
+                                    <!-- Add your items here -->
+                                </items>
+                            </ComboBox>
+                            <Label text="Name"/>
+                            <ComboBox id="searchOption4" placeholder="Search Option 4">
+                                <items>
+                                    <!-- Add your items here -->
+                                </items>
+                            </ComboBox>
                             <Button id="searchButton" text="Search" press="onSearchPress"/>
                         </items>
                     </HBox>
