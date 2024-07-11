@@ -1,31 +1,23 @@
-<content>
-                     <HBox justifyContent="SpaceAround" alignItems="Center" class="sapUiSmallMargin">
-                        <items>
-                            <Label text="Name"/>
-                            <ComboBox id="searchOption1" placeholder="Search Option 1">
-                                <items>
-                                    <!-- Add your items here -->
-                                </items>
-                            </ComboBox>
-                            <Label text="Name"/>
-                            <ComboBox id="searchOption2" placeholder="Search Option 2">
-                                <items>
-                                    <!-- Add your items here -->
-                                </items>
-                            </ComboBox>
-                            <Label text="Name"/>
-                            <ComboBox id="searchOption3" placeholder="Search Option 3">
-                                <items>
-                                    <!-- Add your items here -->
-                                </items>
-                            </ComboBox>
-                            <Label text="Name"/>
-                            <ComboBox id="searchOption4" placeholder="Search Option 4">
-                                <items>
-                                    <!-- Add your items here -->
-                                </items>
-                            </ComboBox>
-                            <Button id="searchButton" text="Search" press="onSearchPress"/>
-                        </items>
-                    </HBox>
-                </content>
+onInit: function () {
+            this.onReadEmpData();
+        },
+        onReadEmpData: function(){
+            var oModel = this.getOwnerComponent().getModel();
+            var oJSONModel = new sap.ui.model.json.JSONModel();
+            var oBusyDailog = new sap.m.BusyDialog({
+                title: "Loading Data",
+                text: "Please wait......"
+            });
+            oBusyDailog.open();
+            oModel.read("/Customers",{
+                success: function(response){
+                    oBusyDailog.close();
+                    oJSONModel.setData(response.results);
+                    this.getView().setModel(oJSONModel,"CustomerModel");
+                }.bind(this),
+                error: function(error){
+                    oBusyDailog.close();
+                    
+                }                   
+            });
+        }
