@@ -1,8 +1,467 @@
-oModel.read("/EntitySet1", {
-    success: function(oData) {
-        var oJSONModel = new sap.ui.model.json.JSONModel(oData);
-        this.getView().setModel(oJSONModel, "EntitySet1");
-    }.bind(this)
+sap.ui.define([
+    "./BaseController",
+    "sap/ui/model/json/JSONModel",
+    "../model/formatter",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator",
+    "sap/ui/export/library",
+    "sap/ui/export/Spreadsheet",
+    "sap/ui/core/Fragment",
+    "sap/ui/model/type/String",
+    "sap/ui/comp/smartvariants/PersonalizableInfo",
+    "sap/m/Token",
+    "sap/m/Label",
+    "sap/ui/comp/library"
+], function (BaseController, JSONModel, formatter, Filter, FilterOperator, exportLibrary, Spreadsheet, Fragment, StringType, PersonalizableInfo, Token, Label, compLibrary) {
+    "use strict";
+    var EdmType = exportLibrary.EdmType;
+    return BaseController.extend("root.alng.zfivenwhtax.controller.VendorWHTReport", {
+        formatter: formatter,
+        onInit: function () {
+            var oModel;
+            this._aTableSearchState = [];
+            var oPeriodModel = new JSONModel({
+                results: [
+                    { key: "01", text: "01" },
+                    { key: "02", text: "02" },
+                    { key: "03", text: "03" },
+                    { key: "04", text: "04" },
+                    { key: "05", text: "05" },
+                    { key: "06", text: "06" },
+                    { key: "07", text: "07" },
+                    { key: "08", text: "08" },
+                    { key: "09", text: "09" },
+                    { key: "10", text: "10" },
+                    { key: "11", text: "11" },
+                    { key: "12", text: "12" }
+                ]
+            });
+            this.setModel(oPeriodModel, "PeriodModel");
+            oModel = new JSONModel({
+                worklistTableTitle: this.getResourceBundle().getText("worklistTableTitle"),
+                shareSendEmailSubject: this.getResourceBundle().getText("shareSendEmailWorklistSubject"),
+                shareSendEmailMessage: this.getResourceBundle().getText("shareSendEmailWorklistMessage", [location.href]),
+                tableNoDataText: this.getResourceBundle().getText("tableNoDataText"),
+                exportBtnEnable: false,
+                Period: "None",
+                FiscalYear: "None",
+                CompCode: "None",
+                WhtTaxCode: "None",
+                wHTBaseLc1: "0.00",
+                wHTBaseLc2: "0.00",
+                wHTAmountLc1: "0.00",
+                wHTAmountLc2: "0.00",
+                vendorRangeFrom: "",
+                vendorRangeTo: ""
+            });
+            this.setModel(oModel, "worklistView");
+            this.oTable = this.byId("vendorwhtax");
+            this.oFilterBar = this.getView().byId("filterbar");
+            this.oSmartVariantManagement = this.getView().byId("svm");
+            var oPersonalizableInfo = new PersonalizableInfo({
+                type: "filterBar",
+                keyName: "persistencyKey",
+                dataSource: "",
+                control: this.oFilterBar
+            });
+            this.oSmartVariantManagement.addPersonalizableControl(oPersonalizableInfo);
+            this.oSmartVariantManagement.initialise(function () { }, this.oFilterBar);
+            this.DliNumberValidCheck = false;
+        },
+        onUpdateFinished: function (oEvent) {
+            var sTitle, oTable, oBinding, aKeys, oLastItem;
+            var oTable = oEvent.getSource();
+            var iTotalItems = oEvent.getParameter("total");
+            var iLength = oTable.getBinding("rows").iLength;
+            if (iLength > 0) {
+                sTitle = this.getResourceBundle().getText("worklistTableTitleCount", [iLength]);
+                this.getModel("worklistView").setProperty("/exportBtnEnable", true);
+                aKeys = oTable.getBinding().aKeys;
+                oLastItem = this.getView().getModel().getObject("/" + aKeys[iLength - 1]);
+                this.getModel("worklistView").setProperty("/wHTBaseLc1", oLastItem.WHTBaseLc1);
+                this.getModel("worklistView").setProperty("/wHTBaseLc2", oLastItem.WHTBaseLc2);
+                this.getModel("worklistView").setProperty("/wHTAmountLc1", oLastItem.WHTAmountLc1);
+                this.getModel("worklistView").setProperty("/wHTAmountLc2", oLastItem.WHTAmountLc2);
+            } else {
+                sTitle = this.getResourceBundle().getText("worklistTableTitle");
+                this.getModel("worklistView").setProperty("/exportBtnEnable", false);
+            }
+            this.getModel("worklistView").setProperty("/worklistTableTitle", sTitle);
+        },
+        formatePeriod: function (sPeriod) {
+            return sPeriod !== "00" ? sPeriod : "";
+        },
+        formateFiscalYear: function (sFiscalYear) {
+            return sFiscalYear !== "0000" ? sFiscalYear : "";
+        },
+        formateDLINumber: function (sDLINumber) {
+            return sDLINumber ? true : false;
+        },
+        onFiscalYearChange: function (oEvent) {
+            var oFiscalYearInput = this.getView().byId("mInpFiscalYear");
+            var aTokens = oFiscalYearInput.getTokens();
+            aTokens.push(new Token({
+                text: oEvent.getParameter("newValue"),
+                key: oEvent.getParameter("newValue")
+            }));
+            oFiscalYearInput.setTokens(aTokens);
+            oFiscalYearInput.setValue("");
+        },
+        onRowSelection: function (oEvent) {
+            var oSelectedRow = oEvent.getParameter("rowContext").getObject();
+            if (!oSelectedRow.CompCode) {
+                var oTable = this.getView().byId("vendorwhtax");
+                var iRowIndex = oEvent.getParameter("rowIndex");
+                oTable.removeSelectionInterval(iRowIndex, iRowIndex);
+            }
+        },
+        onPress: function (oEvent) {
+            this._showObject(oEvent.getSource());
+        },
+        onNavBack: function () {
+            history.go(-1);
+        },
+        onSearch: function () {
+            var aFilterGroupItems = this.oFilterBar.getFilterGroupItems();
+            var oControl, sPath, oFilter, aFilters = [], aTokens, oToken, oRange, aSelectedItems, aSubFilters;
+            for (var i = 0; i < aFilterGroupItems.length; i++) {
+                oControl = aFilterGroupItems[i].getControl();
+                sPath = "/" + aFilterGroupItems[i].getName();
+                if (sPath !== "/Period") {
+                    aTokens = oControl.getTokens();
+                    for (var j = 0; j < aTokens.length; j++) {
+                        if (sPath === "/Vendor") {
+                            oRange = aTokens[j].data().range;
+                            if (oRange) {
+                                if (oRange.operation === "EQ") {
+                                    oFilter = new Filter({
+                                        path: aFilterGroupItems[i].getName(),
+                                        operator: FilterOperator.Contains,
+                                        value1: oRange.value1
+                                    });
+                                } else if (oRange.operation === "BT") {
+                                    oFilter = new Filter({
+                                        path: aFilterGroupItems[i].getName(),
+                                        operator: FilterOperator.BT,
+                                        value1: oRange.value1,
+                                        value2: oRange.value2
+                                    });
+                                }
+                            } else {
+                                oToken = aTokens[j].getKey();
+                                oFilter = new Filter({
+                                    path: aFilterGroupItems[i].getName(),
+                                    operator: FilterOperator.Contains,
+                                    value1: oToken
+                                });
+                            }
+                        } else {
+                            oToken = aTokens[j].getKey();
+                            oFilter = new Filter({
+                                path: aFilterGroupItems[i].getName(),
+                                operator: FilterOperator.EQ,
+                                value1: oToken
+                            });
+                        }
+                        aFilters.push(oFilter);
+                    }
+                    if (aTokens.length) {
+                        this.getModel("worklistView").setProperty(sPath, "None");
+                    } else {
+                        this.getModel("worklistView").setProperty(sPath, "Error");
+                    }
+                } else {
+                    oControl = aFilterGroupItems[i].getControl();
+                    aSelectedItems = oControl.getSelectedItems();
+                    aSubFilters = aSelectedItems.map(function (oItem) {
+                        return new Filter({
+                            path: aFilterGroupItems[i].getName(),
+                            operator: FilterOperator.EQ,
+                            value1: oItem.getKey()
+                        });
+                    });
+                    if (aSelectedItems.length > 0) {
+                        aFilters.push(new Filter({
+                            filters: aSubFilters,
+                            and: false
+                        }));
+                    }
+                }
+            }
+            this.oTable.getBinding("rows").filter(aFilters);
+            this.oTable.setShowOverlay(false);
+        },
+        onRefresh: function () {
+            var oTable = this.byId("vendorwhtax");
+            oTable.getBinding("rows").refresh();
+        },
+        _showObject: function (oItem) {
+            this.getRouter().navTo("object", {
+                objectId: oItem.getBindingContext().getPath().substring("/VendorWTHTaxSet".length)
+            });
+        },
+        onValueHelpRequested: function ()
+        onValueHelpRequested: function () {
+            if (!this._oVendorVHDialog) {
+                this._oVendorVHDialog = this.loadFragment({
+                    name: "root.alng.zfivenwhtax.fragment.VendorVH"
+                })
+            }
+            this._oVendorVHDialog.then(function (e) {
+                this.oVendorDialog = e;
+                this.oVendorDialog.open()
+            }.bind(this))
+        },
+        onVendorValueHelpOkPress: function (e) {
+            var t = p.valuehelpdialog.ValueHelpRangeOperation;
+            var o = this.getModel("worklistView").getProperty("/vendorRangeFrom");
+            var r = this.getModel("worklistView").getProperty("/vendorRangeTo");
+            var a = o + ".." + r;
+            var n = new d({
+                key: "range",
+                text: a
+            }).data("range", {
+                exclude: false,
+                operation: t.BT,
+                keyField: "Vendro",
+                value1: o,
+                value2: r
+            });
+            this.byId("mInpVendor").addToken(n);
+            this.getModel("worklistView").setProperty("/vendorRangeFrom", "");
+            this.getModel("worklistView").setProperty("/vendorRangeTo", "");
+            this.oVendorDialog.close()
+        },
+        onVendorCancelPress: function () {
+            this.getModel("worklistView").setProperty("/vendorRangeFrom", "");
+            this.getModel("worklistView").setProperty("/vendorRangeTo", "");
+            this.oVendorDialog.close()
+        },
+        onCompCodeValueHelpRequest: function () {
+            var e = this.getView();
+            if (!this._compCodeValueHelpDialog) {
+                this._compCodeValueHelpDialog = l.load({
+                    id: e.getId(),
+                    name: "root.alng.zfivenwhtax.fragment.CompanyCodeVH",
+                    controller: this
+                }).then(function (t) {
+                    e.addDependent(t);
+                    return t
+                })
+            }
+            this._compCodeValueHelpDialog.then(function (e) {
+                this._configCompCodeValueHelpDialog();
+                e.open()
+            }.bind(this))
+        },
+        _configCompCodeValueHelpDialog: function () {
+            var e = this.byId("compCodeInput").getValue(),
+                t = this.getView().getModel(),
+                o = t.getProperty("/CompCodeVHSet")
+        },
+        onCompCodeValueHelpDialogClose: function (e) {
+            var t = e.getParameter("selectedItems"),
+                o = this.byId("compCodeInput"),
+                r = o.getTokens();
+            for (var a = 0; a < t.length; a++) {
+                r.push(new d({
+                    text: t[a].getTitle(),
+                    key: t[a].getTitle()
+                }));
+                o.setTokens(r);
+                o.setValue("")
+            }
+        },
+        onCompCodeSearch: function (e) {
+            var t = e.getParameter("value");
+            var o = new r("CompCode", a.Contains, t.toUpperCase());
+            var n = e.getParameter("itemsBinding");
+            n.filter([o])
+        },
+        onWHTaxCodeValueHelpRequest: function () {
+            var e = this.getView();
+            if (!this._pValueHelpDialog) {
+                this._pValueHelpDialog = l.load({
+                    id: e.getId(),
+                    name: "root.alng.zfivenwhtax.fragment.WHTaxCodeVH",
+                    controller: this
+                }).then(function (t) {
+                    e.addDependent(t);
+                    return t
+                })
+            }
+            this._pValueHelpDialog.then(function (e) {
+                this._configWHTaxCodeValueHelpDialog();
+                e.open()
+            }.bind(this))
+        },
+        _configWHTaxCodeValueHelpDialog: function () {
+            var e = this.byId("whTaxCodeInput").getValue(),
+                t = this.getView().getModel(),
+                o = t.getProperty("/WithHoldingTaxCodeVHSet")
+        },
+        onWHTaxValueHelpDialogClose: function (e) {
+            var t = e.getParameter("selectedItems"),
+                o = this.byId("whTaxCodeInput"),
+                r = o.getTokens();
+            for (var a = 0; a < t.length; a++) {
+                r.push(new d({
+                    text: t[a].getTitle(),
+                    key: t[a].getTitle()
+                }));
+                o.setTokens(r);
+                o.setValue("")
+            }
+        },
+        onWHTaxCodeSearch: function (e) {
+            var t = e.getParameter("value");
+            var o = new r("WHTaxCode", a.Contains, t.toUpperCase());
+            var n = e.getParameter("itemsBinding");
+            n.filter([o])
+        },
+        onDLInoChange: function (e) {
+            const t = "60001";
+            var o = e.getSource().getBindingContext().getObject();
+            if (o.DliNumber.length < 15) {
+                e.oSource.setValueState(sap.ui.core.ValueState.Error);
+                e.oSource.setValueStateText("DLI Number should be 15 digit.");
+                this.DliNumberValidCheck = true;
+                return
+            } else {
+                e.oSource.setValueState(sap.ui.core.ValueState.None);
+                this.DliNumberValidCheck = false
+            }
+            o.PaymentRef = t + o.DliNumber;
+            this.oTable.getModel().setProperty("PaymentRef", o.PaymentRef, e.getSource().getBindingContext())
+        },
+        onSaveBtnClick: function () {
+            var e = this,
+                t = {};
+            var o = {
+                CreateFlag: "WITHHOLD_TAX",
+                VendorWTHTaxSet: []
+            };
+            var r = this.oTable.getSelectedIndices();
+            var a = this.oTable.getRows();
+            sap.ui.core.BusyIndicator.show();
+            if (r.length == 0 || r.length === "undefined") {
+                sap.ui.core.BusyIndicator.hide();
+                sap.m.MessageBox.error("Please select atleast one line item");
+                return
+            }
+            if (this.DliNumberValidCheck) {
+                sap.ui.core.BusyIndicator.hide();
+                sap.m.MessageBox.error("Please correct DLI Number.");
+                return
+            }
+            for (var n of r) {
+                t = a[n].getBindingContext().getObject();
+                o.VendorWTHTaxSet.push(t)
+            }
+            this.getView().getModel().create("/HeaderSet", o, {
+                success: function (t) {
+                    sap.ui.core.BusyIndicator.hide();
+                    sap.m.MessageBox.success("Data saved successfully.");
+                    e.onSearch()
+                },
+                error: function (e) {
+                    sap.ui.core.BusyIndicator.hide()
+                }
+            })
+        },
+        createColumnConfig: function () {
+            var e = [];
+            e.push({
+                label: "Company Code",
+                type: h.String,
+                property: "CompCode",
+                scale: 0
+            });
+            e.push({
+                label: "Period",
+                property: "Period",
+                type: h.Number
+            });
+            e.push({
+                label: "Fiscal year",
+                type: h.String,
+                property: "FiscalYear",
+                scale: 0
+            });
+            e.push({
+                label: "W/Tax Code",
+                property: "WhtTaxCode",
+                type: h.String
+            });
+            e.push({
+                label: "Vendor",
+                property: ["Vendor", "VendorName"],
+                type: h.String,
+                template: "{0} - {1}"
+            });
+            e.push({
+                label: "Vendor Tax Id",
+                property: "VendorTaxCode",
+                type: h.String,
+                scale: 2,
+                delimiter: true
+            });
+            e.push({
+                label: "WHT Base (USD)",
+                property: "WHTBaseLc1",
+                type: h.Number
+            });
+            e.push({
+                label: "WHT Amount (USD)",
+                property: "WHTBaseLc2",
+                type: h.Number
+            });
+            e.push({
+                label: "WHT Base (AOA)",
+                property: "WHTAmountLc1",
+                type: h.Number
+            });
+            e.push({
+                label: "WHT Amount (AOA)",
+                property: "WHTAmountLc2",
+                type: h.Number
+            });
+            e.push({
+                label: "DLI Number",
+                property: "DliNumber",
+                type: h.Number
+            });
+            e.push({
+                label: "Payment Ref",
+                property: "PaymentRef",
+                type: h.Number
+            });
+            e.push({
+                label: "Payment History",
+                property: "PaymentHistory",
+                type: h.Boolean
+            });
+            return e
+        },
+        onExport: function () {
+            var e, t, o, r, a, n;
+            var l = (new Date).toLocaleString() + ".xlsx";
+            n = this.getResourceBundle().getText("fileName", [l]);
+            a = this.oTable;
+            t = a.getBinding("rows");
+            e = this.createColumnConfig();
+            o = {
+                workbook: {
+                    columns: e,
+                    hierarchyLevel: "Level"
+                },
+                dataSource: t,
+                fileName: n
+            };
+            r = new i(o);
+            r.build().finally(function () {
+                r.destroy()
+            })
+        }
+    });
 });
-
-// Repeat the above steps for each entity set (EntitySet2, EntitySet3, EntitySet4)
