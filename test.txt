@@ -1,23 +1,8 @@
-onInit: function () {
-            this.onReadEmpData();
-        },
-        onReadEmpData: function(){
-            var oModel = this.getOwnerComponent().getModel();
-            var oJSONModel = new sap.ui.model.json.JSONModel();
-            var oBusyDailog = new sap.m.BusyDialog({
-                title: "Loading Data",
-                text: "Please wait......"
-            });
-            oBusyDailog.open();
-            oModel.read("/Customers",{
-                success: function(response){
-                    oBusyDailog.close();
-                    oJSONModel.setData(response.results);
-                    this.getView().setModel(oJSONModel,"CustomerModel");
-                }.bind(this),
-                error: function(error){
-                    oBusyDailog.close();
-                    
-                }                   
-            });
-        }
+oModel.read("/EntitySet1", {
+    success: function(oData) {
+        var oJSONModel = new sap.ui.model.json.JSONModel(oData);
+        this.getView().setModel(oJSONModel, "EntitySet1");
+    }.bind(this)
+});
+
+// Repeat the above steps for each entity set (EntitySet2, EntitySet3, EntitySet4)
